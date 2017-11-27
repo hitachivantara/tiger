@@ -14,38 +14,10 @@ import java.security.cert.X509Certificate;
 import java.util.List;
 
 public class LumadaRestClient {
-    final private static String TAG = "Tag.NetworkUtilsAcceptSelfSignedSslCert";
+    private static LumadaTrustManager trustManager = new LumadaTrustManager();
 
     private static OkHttpClient createHttpClient() {
-        final TrustManager[] trustManagers = new TrustManager[]{new X509TrustManager() {
-            public X509Certificate[] getAcceptedIssuers() {
-                X509Certificate[] x509Certificates = new X509Certificate[0];
-                return x509Certificates;
-            }
-
-            public void checkServerTrusted(final X509Certificate[] chain,
-                                           final String authType) throws CertificateException {
-            }
-
-            public void checkClientTrusted(final X509Certificate[] chain,
-                                           final String authType) throws CertificateException {
-            }
-        }};
-
-        X509TrustManager x509TrustManager = new X509TrustManager() {
-            public X509Certificate[] getAcceptedIssuers() {
-                X509Certificate[] x509Certificates = new X509Certificate[0];
-                return x509Certificates;
-            }
-
-            public void checkServerTrusted(final X509Certificate[] chain,
-                                           final String authType) throws CertificateException {
-            }
-
-            public void checkClientTrusted(final X509Certificate[] chain,
-                                           final String authType) throws CertificateException {
-            }
-        };
+        final TrustManager[] trustManagers = new TrustManager[]{trustManager};
 
         OkHttpClient.Builder okHttpClientBuilder = new OkHttpClient.Builder();
         try {
@@ -55,16 +27,16 @@ public class LumadaRestClient {
             SecureRandom secureRandom = new SecureRandom();
             sslContext.init(keyManagers, trustManagers, secureRandom);
             SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
-            okHttpClientBuilder.sslSocketFactory(sslSocketFactory, x509TrustManager);
+            okHttpClientBuilder.sslSocketFactory(sslSocketFactory, trustManager);
         } catch (Exception e) {
             e.printStackTrace();
         }
 
         HostnameVerifier hostnameVerifier = new HostnameVerifier() {
             public boolean verify(String hostname, SSLSession session) {
-                System.out.println(TAG + ": hostname: " + String.valueOf(hostname));
+                System.out.println("Hostname: " + String.valueOf(hostname));
                 //if (hostname.equals(HOST)) {
-                    return true;
+                return true;
                 //}
                 //return false;
             }
@@ -174,4 +146,18 @@ public class LumadaRestClient {
         }
     }
 
+    private static class LumadaTrustManager implements X509TrustManager {
+        public X509Certificate[] getAcceptedIssuers() {
+            X509Certificate[] x509Certificates = new X509Certificate[0];
+            return x509Certificates;
+        }
+
+        public void checkServerTrusted(final X509Certificate[] chain,
+                                       final String authType) throws CertificateException {
+        }
+
+        public void checkClientTrusted(final X509Certificate[] chain,
+                                       final String authType) throws CertificateException {
+        }
+    }
 }
