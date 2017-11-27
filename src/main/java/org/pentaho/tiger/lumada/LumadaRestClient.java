@@ -34,11 +34,7 @@ public class LumadaRestClient {
 
         HostnameVerifier hostnameVerifier = new HostnameVerifier() {
             public boolean verify(String hostname, SSLSession session) {
-                System.out.println("Hostname: " + String.valueOf(hostname));
-                //if (hostname.equals(HOST)) {
                 return true;
-                //}
-                //return false;
             }
         };
 
@@ -133,8 +129,8 @@ public class LumadaRestClient {
     }
 
     public static void main(String[] args) throws Exception {
-        String username = "YOUR_ADMIN";
-        String password = "YOUR_PASSWORD";
+        String username = "admin";
+        String password = "YOUR_PASSWORD%5";
         LoginResponse loginResponse = LumadaRestClient.login("https://localhost/v1/security/oauth/token", username, password);
 
         if (loginResponse != null) {
