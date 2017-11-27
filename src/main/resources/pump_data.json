@@ -1,0 +1,34 @@
+[
+  [
+    {
+      "SCADA_ID": "00000000-0000-0000-0000-000000000000",
+      "tagname": "JACK_ST_MALO.tot_linepack",
+      "timeVal": "8/28/2017 1:38:05 PM",
+      "intval": 0,
+      "value": 336438.125,
+      "model_val": 0,
+      "localDate": "2017-08-28T13:38:05-05:00",
+      "valString": null,
+      "localDateChanged": "0001-01-01T00:00:00",
+      "timeValChanged": null,
+      "valChanged": 0,
+      "totalCount": 0,
+      "totalCountZero": 0,
+      "runTime": 0,
+      "noisePercent": 1,
+      "smartData": {
+        "Value": 336438.125,
+        "Integral": 1168.1879340277776,
+        "RiseTime": 0,
+        "MaxVal": 337667.09375,
+        "DeclineTime": 0,
+        "MinVal": 0,
+        "Threshold": 100,
+        "Counts": 0,
+        "CountsDuration": 0.006944444444444444,
+        "FrequencyContent": 0,
+        "WaveFormShape": 0
+      }
+    }
+  ]
+]
