@@ -5,7 +5,7 @@ import com.hds.lumada.client.api.AssetClient;
 import com.hds.lumada.client.config.*;
 import com.hds.lumada.client.implementation.AssetClientImpl;
 
-public class ApiTest {
+public class LumadaSdkTest {
     public static void main(String[] args) throws Exception {
         String entityId = "9d23824d-5ac1-48e9-8b97-cad607938a8f";
         String entityValue = "qgUOIkpyJuRDon0MLMXWfNE3k0FWWcnX";
