@@ -15,18 +15,8 @@ import java.util.List;
 
 public class LumadaRestClient {
     final private static String TAG = "Tag.NetworkUtilsAcceptSelfSignedSslCert";
-    //final private static String HOST = "192.168.43.176";
-    //final private static String BASE_URL = "https://" + HOST;
 
     private static OkHttpClient createHttpClient() {
-        /*
-        OkHttpClient client = new OkHttpClient();
-        client.newBuilder().hostnameVerifier(new HostnameVerifier() {
-            public boolean verify(String hostname, SSLSession session) {
-                return true;
-            }
-        });
-        */
         final TrustManager[] trustManagers = new TrustManager[]{new X509TrustManager() {
             public X509Certificate[] getAcceptedIssuers() {
                 X509Certificate[] x509Certificates = new X509Certificate[0];
@@ -35,12 +25,10 @@ public class LumadaRestClient {
 
             public void checkServerTrusted(final X509Certificate[] chain,
                                            final String authType) throws CertificateException {
-                System.out.println(TAG + ": authType: " + String.valueOf(authType));
             }
 
             public void checkClientTrusted(final X509Certificate[] chain,
                                            final String authType) throws CertificateException {
-                System.out.println(TAG + ": authType: " + String.valueOf(authType));
             }
         }};
 
@@ -52,12 +40,10 @@ public class LumadaRestClient {
 
             public void checkServerTrusted(final X509Certificate[] chain,
                                            final String authType) throws CertificateException {
-                System.out.println(TAG + ": authType: " + String.valueOf(authType));
             }
 
             public void checkClientTrusted(final X509Certificate[] chain,
                                            final String authType) throws CertificateException {
-                System.out.println(TAG + ": authType: " + String.valueOf(authType));
             }
         };
 
@@ -175,8 +161,8 @@ public class LumadaRestClient {
     }
 
     public static void main(String[] args) throws Exception {
-        String username = "admin";
-        String password = "RedmondAdmin%5";
+        String username = "YOUR_ADMIN";
+        String password = "YOUR_PASSWORD";
         LoginResponse loginResponse = LumadaRestClient.login("https://localhost/v1/security/oauth/token", username, password);
 
         if (loginResponse != null) {
