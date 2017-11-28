@@ -1,6 +1,7 @@
-package org.pentaho.tiger.lumada;
+package org.pentaho.tiger.lumada.response;
 
 import com.google.gson.annotations.SerializedName;
+import org.pentaho.tiger.lumada.entity.Entity;
 
 public class LoginResponse {
     @SerializedName("access_token")

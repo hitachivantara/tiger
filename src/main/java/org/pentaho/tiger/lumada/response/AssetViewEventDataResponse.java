@@ -1,4 +1,6 @@
-package org.pentaho.tiger.lumada;
+package org.pentaho.tiger.lumada.response;
+
+import org.pentaho.tiger.lumada.entity.AssetEvent;
 
 public class AssetViewEventDataResponse {
     private String assetId;

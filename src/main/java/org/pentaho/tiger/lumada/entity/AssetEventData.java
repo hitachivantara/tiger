@@ -1,4 +1,4 @@
-package org.pentaho.tiger.lumada;
+package org.pentaho.tiger.lumada.entity;
 
 import com.google.gson.annotations.SerializedName;
 

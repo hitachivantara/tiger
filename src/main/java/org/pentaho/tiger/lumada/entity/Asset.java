@@ -1,7 +1,6 @@
-package org.pentaho.tiger.lumada;
+package org.pentaho.tiger.lumada.entity;
 
 import java.util.List;
-import java.util.Map;
 
 public class Asset extends LumadaEntity {
     private int version;
