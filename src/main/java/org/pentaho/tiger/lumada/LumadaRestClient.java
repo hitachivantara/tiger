@@ -11,9 +11,15 @@ import java.io.IOException;
 import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 public class LumadaRestClient {
+    private static String LUMADA_HOST = "localhost";
+    private static String ASSET_VIEW_EVENT_DATA_ENDPOINT = "https://%s/v1/asset-data/assets/%s/events?startTime=%s&endTime=%s";
+    private static SimpleDateFormat EVENT_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+
     private static LumadaTrustManager trustManager = new LumadaTrustManager();
 
     private static OkHttpClient createHttpClient() {
@@ -128,17 +134,60 @@ public class LumadaRestClient {
         }
     }
 
+    public static void viewEvent(String token, AssetViewEventDataRequest viewEventRequest) {
+        String start = EVENT_DATE_FORMAT.format(viewEventRequest.getStart());
+        String end = EVENT_DATE_FORMAT.format(viewEventRequest.getEnd());
+
+        String endpoint = String.format(ASSET_VIEW_EVENT_DATA_ENDPOINT, LUMADA_HOST, viewEventRequest.getAssetId(), start, end);
+        System.out.println(endpoint);
+
+        OkHttpClient client = createHttpClient();
+
+        Request request = new Request.Builder()
+                .url(endpoint)
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Authorization", "Bearer " + token)
+                .build();
+
+        String body;
+        Response response;
+        try {
+            response = client.newCall(request).execute();
+            body = response.body().string();
+            System.out.println("body: " + body);
+
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            AssetViewEventDataResponse event = gson.fromJson(body, AssetViewEventDataResponse.class);
+
+            System.out.println(gson.toJson(event));
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        } finally {
+        }
+    }
+
     public static void main(String[] args) throws Exception {
         String username = "admin";
-        String password = "YOUR_PASSWORD%5";
-        LoginResponse loginResponse = LumadaRestClient.login("https://localhost/v1/security/oauth/token", username, password);
+        String password = "YOUR_PASSWORD";//YOUR_PASSWORD
+
+        System.out.println("Connecting to Lumada");
+        LoginResponse loginResponse = LumadaRestClient.login(String.format("https://%s/v1/security/oauth/token", LUMADA_HOST), username, password);
 
         if (loginResponse != null) {
             String token = loginResponse.getAccessToken();
-            System.out.println("token:" + token);
+            System.out.println("access token:" + token);
 
             String assetId = "9d23824d-5ac1-48e9-8b97-cad607938a8f";
-            LumadaRestClient.viewAsset("https://localhost/v1/asset-management/assets", token, assetId);
+            LumadaRestClient.viewAsset(String.format("https://%s/v1/asset-management/assets", LUMADA_HOST), token, assetId);
+
+            AssetViewEventDataRequest request = new AssetViewEventDataRequest();
+            //Query event for 1 day
+            Date end = new Date();
+            Date start = new Date(end.getTime() - 1000 * 60 * 60 * 24);
+            request.setEnd(end);
+            request.setStart(start);
+            request.setAssetId(assetId);
+            viewEvent(token, request);
         }
     }
 
