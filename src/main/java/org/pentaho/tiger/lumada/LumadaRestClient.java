@@ -7,6 +7,7 @@ import org.pentaho.tiger.lumada.entity.Asset;
 import org.pentaho.tiger.lumada.entity.AssetProperty;
 import org.pentaho.tiger.lumada.request.AssetViewEventDataRequest;
 import org.pentaho.tiger.lumada.request.LoginRequest;
+import org.pentaho.tiger.lumada.response.AssetGetAccessTokenResponse;
 import org.pentaho.tiger.lumada.response.AssetViewEventDataResponse;
 import org.pentaho.tiger.lumada.response.LoginResponse;
 
@@ -29,6 +30,7 @@ public class LumadaRestClient {
     private static String LOGIN_ENDPOINT = "https://%s/v1/security/oauth/token";
     private static String ASSET_VIEW_ENDPOINT = "https://%s/v1/asset-management/assets/%s";
     private static String ASSET_VIEW_EVENT_DATA_ENDPOINT = "https://%s/v1/asset-data/assets/%s/events?startTime=%s&endTime=%s";
+    private static String ASSET_GET_ACCESS_TOKEN_ENDPOINT = "https://%s/v1/asset-management/assets/%s/token";
 
     private static SimpleDateFormat EVENT_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
@@ -109,7 +111,7 @@ public class LumadaRestClient {
 
             return loginResponse;
         } catch (IOException ioe) {
-            ioe.printStackTrace();
+            System.err.println(ioe);
         } finally {
         }
 
@@ -124,13 +126,6 @@ public class LumadaRestClient {
             System.out.println(url);
         }
 
-        /*
-        Request request = new Request.Builder()
-                .url(url)
-                .addHeader("Content-Type", "application/json")
-                .addHeader("Authorization", "Bearer " + token)
-                .build();
-*/
         Request request = buildRequest(url, token);
 
         String body;
@@ -172,13 +167,6 @@ public class LumadaRestClient {
 
         OkHttpClient client = createHttpClient();
 
-        /*
-        Request request = new Request.Builder()
-                .url(url)
-                .addHeader("Content-Type", "application/json")
-                .addHeader("Authorization", "Bearer " + token)
-                .build();
-*/
         Request request = buildRequest(url, token);
 
         String body;
@@ -202,6 +190,41 @@ public class LumadaRestClient {
         }
     }
 
+    public static String getAssetAccessToken(String token, String assetId) {
+        OkHttpClient client = createHttpClient();
+
+        String url = String.format(ASSET_GET_ACCESS_TOKEN_ENDPOINT, LUMADA_HOST, assetId);
+        if (DEBUG) {
+            System.out.println(url);
+        }
+
+        Request request = buildRequest(url, token);
+
+        String body;
+        Response response;
+        try {
+            response = client.newCall(request).execute();
+            body = response.body().string();
+            if (DEBUG) {
+                System.out.println(body);
+            }
+
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            AssetGetAccessTokenResponse accessTokenResp = gson.fromJson(body, AssetGetAccessTokenResponse.class);
+
+            if (DEBUG) {
+                System.out.println(gson.toJson(accessTokenResp));
+            }
+
+            return accessTokenResp.getToken();
+        } catch (IOException ioe) {
+            System.err.println(ioe);
+        } finally {
+        }
+
+        return null;
+    }
+
     public static void main(String[] args) throws Exception {
         String username = "admin";
         String password = "YOUR_PASSWORD";//YOUR_PASSWORD
@@ -213,24 +236,35 @@ public class LumadaRestClient {
         loginRequest.setPassword(password);
         LoginResponse loginResponse = login(loginRequest);
 
-        if (loginResponse != null) {
-            String token = loginResponse.getAccessToken();
-            if (DEBUG) {
-                System.out.println("access token:" + token);
-            }
-
-            String assetId = "9d23824d-5ac1-48e9-8b97-cad607938a8f";
-            LumadaRestClient.viewAsset(token, assetId);
-
-            AssetViewEventDataRequest request = new AssetViewEventDataRequest();
-            //Query event for 1 day
-            Date end = new Date();
-            Date start = new Date(end.getTime() - 1000 * 60 * 60 * 24);
-            request.setEnd(end);
-            request.setStart(start);
-            request.setAssetId(assetId);
-            viewEvent(token, request);
+        if (loginResponse == null) {
+            System.out.println("Could not login.");
+            return;
         }
+
+        String token = loginResponse.getAccessToken();
+        if (DEBUG) {
+            System.out.println("access token:" + token);
+        }
+
+        if (token == null) {
+            System.out.println("Could not obtain valid token.");
+            return;
+        }
+
+        String assetId = "9d23824d-5ac1-48e9-8b97-cad607938a8f";
+        LumadaRestClient.viewAsset(token, assetId);
+
+        AssetViewEventDataRequest request = new AssetViewEventDataRequest();
+        //Query event for 1 day
+        Date end = new Date();
+        Date start = new Date(end.getTime() - 1000 * 60 * 60 * 24);
+        request.setEnd(end);
+        request.setStart(start);
+        request.setAssetId(assetId);
+        viewEvent(token, request);
+
+        String assetAccessToken = getAssetAccessToken(token, assetId);
+        System.out.println("Asset access token: " + assetAccessToken);
     }
 
     private static class LumadaTrustManager implements X509TrustManager {
