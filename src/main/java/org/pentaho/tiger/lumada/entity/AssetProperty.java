@@ -4,6 +4,13 @@ public class AssetProperty {
     private String name;
     private String value;
 
+    public AssetProperty() {}
+
+    public AssetProperty(String name, String value) {
+        this.name = name;
+        this.value = value;
+    }
+
     public String getName() {
         return name;
     }

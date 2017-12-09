@@ -3,76 +3,54 @@ package org.pentaho.tiger.lumada;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import okhttp3.*;
-import org.pentaho.tiger.lumada.entity.Asset;
 import org.pentaho.tiger.lumada.entity.AssetProperty;
+import org.pentaho.tiger.lumada.request.AssetNewRequest;
 import org.pentaho.tiger.lumada.request.AssetViewEventDataRequest;
 import org.pentaho.tiger.lumada.request.LoginRequest;
 import org.pentaho.tiger.lumada.response.AssetGetAccessTokenResponse;
 import org.pentaho.tiger.lumada.response.AssetViewEventDataResponse;
+import org.pentaho.tiger.lumada.response.AssetViewResponse;
 import org.pentaho.tiger.lumada.response.LoginResponse;
 
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.*;
 import java.io.IOException;
-import java.security.SecureRandom;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+/*
+Command line arguments
+
+    --debug     output debug message
+    --host      host of the Lumada server
+
+    Example:
+    java -cp .:./lib/* org.pentaho.tiger.lumada.LumadaRestClient --debug --host 10.0.2.15
+
+    Make sure all required jars are in "lib" directory:
+        gson-2.8.2.jar
+        okhttp-3.9.1.jar
+*/
 public class LumadaRestClient {
-    public static boolean DEBUG = true;
+    public static boolean DEBUG = false;
+
+    private static Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    private static LumadaRestHelper helper = new LumadaRestHelper();
 
     private static String LUMADA_HOST = "localhost";
+    private static String LUMADA_USER = "admin";
+    private static String LUMADA_PASS = "admin";
 
     private static String LOGIN_ENDPOINT = "https://%s/v1/security/oauth/token";
     private static String ASSET_VIEW_ENDPOINT = "https://%s/v1/asset-management/assets/%s";
     private static String ASSET_VIEW_EVENT_DATA_ENDPOINT = "https://%s/v1/asset-data/assets/%s/events?startTime=%s&endTime=%s";
     private static String ASSET_GET_ACCESS_TOKEN_ENDPOINT = "https://%s/v1/asset-management/assets/%s/token";
+    private static String ASSET_ADD_NEW_AVATAR_ENDPOINT = "https://%s/v1/asset-management/assets";
 
     private static SimpleDateFormat EVENT_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
-    private static LumadaTrustManager trustManager = new LumadaTrustManager();
-
-    private static OkHttpClient createHttpClient() {
-        final TrustManager[] trustManagers = new TrustManager[]{trustManager};
-
-        OkHttpClient.Builder okHttpClientBuilder = new OkHttpClient.Builder();
-        try {
-            final String PROTOCOL = "SSL";
-            SSLContext sslContext = SSLContext.getInstance(PROTOCOL);
-            KeyManager[] keyManagers = null;
-            SecureRandom secureRandom = new SecureRandom();
-            sslContext.init(keyManagers, trustManagers, secureRandom);
-            SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
-            okHttpClientBuilder.sslSocketFactory(sslSocketFactory, trustManager);
-        } catch (Exception e) {
-            System.err.println(e);
-        }
-
-        HostnameVerifier hostnameVerifier = new HostnameVerifier() {
-            public boolean verify(String hostname, SSLSession session) {
-                return true;
-            }
-        };
-
-        okHttpClientBuilder.hostnameVerifier(hostnameVerifier);
-        return okHttpClientBuilder.build();
-    }
-
-    private static Request buildRequest(String url, String token) {
-        return new Request.Builder()
-                .url(url)
-                .addHeader("Content-Type", "application/json")
-                .addHeader("Authorization", "Bearer " + token)
-                .build();
-    }
-
-
     public static LoginResponse login(LoginRequest loginRequest) {
-        OkHttpClient client = createHttpClient();
+        OkHttpClient client = helper.createHttpClient();
 
         RequestBody requestBody = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
@@ -119,41 +97,13 @@ public class LumadaRestClient {
     }
 
     public static void viewAsset(String token, String assetId) {
-        OkHttpClient client = createHttpClient();
-
         String url = String.format(ASSET_VIEW_ENDPOINT, LUMADA_HOST, assetId);
         if (DEBUG) {
             System.out.println(url);
         }
 
-        Request request = buildRequest(url, token);
-
-        String body;
-        Response response;
-        try {
-            response = client.newCall(request).execute();
-            body = response.body().string();
-            if (DEBUG) {
-                System.out.println(body);
-            }
-
-            Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            Asset asset = gson.fromJson(body, Asset.class);
-
-            List<AssetProperty> properties = asset.getPriperties();
-            if (properties != null) {
-                for (AssetProperty ap : properties) {
-                    System.out.println(asset.getName() + "=" + ap.getValue());
-                }
-            }
-
-            if (DEBUG) {
-                System.out.println(gson.toJson(asset));
-            }
-        } catch (IOException ioe) {
-            System.err.println(ioe);
-        } finally {
-        }
+        AssetViewResponse response = (AssetViewResponse) helper.execute(token, url, AssetViewResponse.class);
+        System.out.println(response);
     }
 
     public static void viewEvent(String token, AssetViewEventDataRequest viewEventRequest) {
@@ -165,72 +115,61 @@ public class LumadaRestClient {
             System.out.println(url);
         }
 
-        OkHttpClient client = createHttpClient();
-
-        Request request = buildRequest(url, token);
-
-        String body;
-        Response response;
-        try {
-            response = client.newCall(request).execute();
-            body = response.body().string();
-            if (DEBUG) {
-                System.out.println(body);
-            }
-
-            Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            AssetViewEventDataResponse event = gson.fromJson(body, AssetViewEventDataResponse.class);
-
-            if (DEBUG) {
-                System.out.println(gson.toJson(event));
-            }
-        } catch (IOException ioe) {
-            System.err.println(ioe);
-        } finally {
-        }
+        AssetViewEventDataResponse response = (AssetViewEventDataResponse) helper.execute(token, url, AssetViewEventDataResponse.class);
+        System.out.println(response);
     }
 
     public static String getAssetAccessToken(String token, String assetId) {
-        OkHttpClient client = createHttpClient();
-
         String url = String.format(ASSET_GET_ACCESS_TOKEN_ENDPOINT, LUMADA_HOST, assetId);
         if (DEBUG) {
             System.out.println(url);
         }
 
-        Request request = buildRequest(url, token);
-
-        String body;
-        Response response;
-        try {
-            response = client.newCall(request).execute();
-            body = response.body().string();
-            if (DEBUG) {
-                System.out.println(body);
-            }
-
-            Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            AssetGetAccessTokenResponse accessTokenResp = gson.fromJson(body, AssetGetAccessTokenResponse.class);
-
-            if (DEBUG) {
-                System.out.println(gson.toJson(accessTokenResp));
-            }
-
+        AssetGetAccessTokenResponse accessTokenResp = (AssetGetAccessTokenResponse) helper.execute(token, url, AssetGetAccessTokenResponse.class);
+        if (accessTokenResp != null) {
             return accessTokenResp.getToken();
-        } catch (IOException ioe) {
-            System.err.println(ioe);
-        } finally {
+        }
+        return null;
+    }
+
+    public static String addAsset(String token, AssetNewRequest assetNewRequest) {
+        String url = String.format(ASSET_ADD_NEW_AVATAR_ENDPOINT, LUMADA_HOST);
+        if (DEBUG) {
+            System.out.println(url);
+        }
+
+        AssetViewResponse response = (AssetViewResponse) helper.execute(token, url, AssetViewResponse.class, new Gson().toJson(assetNewRequest), "POST");
+        System.out.println(response);
+        if (response != null) {
+            return response.getId();
         }
 
         return null;
     }
 
     public static void main(String[] args) throws Exception {
+        try {
+            if (args.length != 0) {
+                for (int i = 0; i < args.length; i++) {
+                    if ("--debug".equals(args[i])) {
+                        DEBUG = true;
+                        LumadaRestHelper.DEBUG = true;
+                    } else if ("--host".endsWith(args[i])) {
+                        LUMADA_HOST = args[++i];
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            System.err.println("Invalid arguments");
+            System.err.println(ex);
+        }
+
         String username = "admin";
         String password = "YOUR_PASSWORD";//YOUR_PASSWORD
 
         System.out.println("Connecting to Lumada");
 
+        //Login and obtain token
         LoginRequest loginRequest = new LoginRequest();
         loginRequest.setUsername(username);
         loginRequest.setPassword(password);
@@ -251,34 +190,38 @@ public class LumadaRestClient {
             return;
         }
 
+        //View an asset
+        System.out.println("----------------------------------------");
         String assetId = "9d23824d-5ac1-48e9-8b97-cad607938a8f";
         LumadaRestClient.viewAsset(token, assetId);
 
+        //List asset's event
+        System.out.println("----------------------------------------");
         AssetViewEventDataRequest request = new AssetViewEventDataRequest();
-        //Query event for 1 day
+        //Query event for 30 day
         Date end = new Date();
-        Date start = new Date(end.getTime() - 1000 * 60 * 60 * 24);
+        Date start = new Date(end.getTime() - 1000l * 60 * 60 * 24 * 30);
         request.setEnd(end);
         request.setStart(start);
         request.setAssetId(assetId);
         viewEvent(token, request);
 
+        //Obtian the asset access token
+        System.out.println("----------------------------------------");
         String assetAccessToken = getAssetAccessToken(token, assetId);
         System.out.println("Asset access token: " + assetAccessToken);
-    }
 
-    private static class LumadaTrustManager implements X509TrustManager {
-        public X509Certificate[] getAcceptedIssuers() {
-            X509Certificate[] x509Certificates = new X509Certificate[0];
-            return x509Certificates;
-        }
-
-        public void checkServerTrusted(final X509Certificate[] chain,
-                                       final String authType) throws CertificateException {
-        }
-
-        public void checkClientTrusted(final X509Certificate[] chain,
-                                       final String authType) throws CertificateException {
-        }
+        //Create new asset avatar
+        System.out.println("----------------------------------------");
+        AssetNewRequest assetNewRequest = new AssetNewRequest();
+        assetNewRequest.setName("Doosan B13R-5B");
+        assetNewRequest.setAssetTypeId("662bf4d4-d14c-11e7-8bb5-080027e18512");
+        //Create properties for this new asset avatar
+        List<AssetProperty> properties = new ArrayList<AssetProperty>();
+        properties.add(new AssetProperty("location","Seattle"));
+        properties.add(new AssetProperty("Speed","5"));
+        assetNewRequest.setPriperties(properties);
+        String newId = addAsset(token, assetNewRequest);
+        System.out.println("New Id: " + newId);
     }
 }

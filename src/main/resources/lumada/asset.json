@@ -1,0 +1,15 @@
+{
+  "gatewayId": "570a2000-6911-46b4-c8d1-8ef07g51hijk",
+  "name": "Name23456",
+  "assetTypeId": "truck",
+  "properties": [
+    {
+      "name": "location",
+      "value": "ohio"
+    },
+    {
+      "name": "temperature",
+      "value": "72"
+    }
+  ]
+}
