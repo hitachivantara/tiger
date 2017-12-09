@@ -165,7 +165,7 @@ public class LumadaRestClient {
         }
 
         String username = "admin";
-        String password = "RedmondAdmin%5";//YOUR_PASSWORD
+        String password = "YOUR_PASSWORD";//YOUR_PASSWORD
 
         System.out.println("Connecting to Lumada");
 
