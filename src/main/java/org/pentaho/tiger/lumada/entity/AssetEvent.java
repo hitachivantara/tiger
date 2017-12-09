@@ -37,4 +37,10 @@ public class AssetEvent {
     public void setSource(String source) {
         this.source = source;
     }
+
+    public String toString() {
+        StringBuilder buf = new StringBuilder();
+        buf.append("Name: ").append(name).append(", source: ").append(source).append(", timestamp: ").append(timestamp);
+        return buf.toString();
+    }
 }

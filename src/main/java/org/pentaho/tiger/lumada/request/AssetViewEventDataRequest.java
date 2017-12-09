@@ -2,7 +2,7 @@ package org.pentaho.tiger.lumada.request;
 
 import java.util.Date;
 
-public class AssetViewEventDataRequest {
+public class AssetViewEventDataRequest implements LumadaRestRequest {
     private String assetId;
     private Date start;
     private Date end;

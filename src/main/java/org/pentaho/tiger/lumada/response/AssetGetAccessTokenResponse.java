@@ -1,6 +1,6 @@
 package org.pentaho.tiger.lumada.response;
 
-public class AssetGetAccessTokenResponse {
+public class AssetGetAccessTokenResponse implements LumadaRestResponse {
     private String id;
     private String token;
     private String authHash;
