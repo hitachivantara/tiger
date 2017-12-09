@@ -169,6 +169,7 @@ public class LumadaRestClient {
 
         System.out.println("Connecting to Lumada");
 
+        //Login and obtain token
         LoginRequest loginRequest = new LoginRequest();
         loginRequest.setUsername(username);
         loginRequest.setPassword(password);
@@ -189,13 +190,15 @@ public class LumadaRestClient {
             return;
         }
 
+        //View an asset
         System.out.println("----------------------------------------");
         String assetId = "9d23824d-5ac1-48e9-8b97-cad607938a8f";
         LumadaRestClient.viewAsset(token, assetId);
 
+        //List asset's event
         System.out.println("----------------------------------------");
         AssetViewEventDataRequest request = new AssetViewEventDataRequest();
-        //Query event for 60 day
+        //Query event for 30 day
         Date end = new Date();
         Date start = new Date(end.getTime() - 1000l * 60 * 60 * 24 * 30);
         request.setEnd(end);
@@ -203,15 +206,17 @@ public class LumadaRestClient {
         request.setAssetId(assetId);
         viewEvent(token, request);
 
+        //Obtian the asset access token
         System.out.println("----------------------------------------");
         String assetAccessToken = getAssetAccessToken(token, assetId);
         System.out.println("Asset access token: " + assetAccessToken);
 
+        //Create new asset avatar
         System.out.println("----------------------------------------");
         AssetNewRequest assetNewRequest = new AssetNewRequest();
         assetNewRequest.setName("Doosan B13R-5B");
         assetNewRequest.setAssetTypeId("662bf4d4-d14c-11e7-8bb5-080027e18512");
-
+        //Create properties for this new asset avatar
         List<AssetProperty> properties = new ArrayList<AssetProperty>();
         properties.add(new AssetProperty("location","Seattle"));
         properties.add(new AssetProperty("Speed","5"));
