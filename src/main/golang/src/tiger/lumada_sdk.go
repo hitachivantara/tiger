@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/hitachivantara/lumada"
 )
 
@@ -10,7 +11,12 @@ func main() {
 
 	//asset := lumada.Asset{Id: "9d23824d-5ac1-48e9-8b97-cad607938a8f"}
 	//fmt.Println(asset)
-	
-	loginReq := lumada.LoginRequest{Username:"admin", Password:"YOUR_PASSWORD"}
-	lumada.Login(loginReq, "10.0.2.15")
+
+	loginReq := lumada.LoginRequest{Username: "admin", Password: "YOUR_PASSWORD"}
+	loginResp, err := lumada.Login(loginReq, "10.0.2.15")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Printf("Access token: %v\n", loginResp.AccessToken)
 }
