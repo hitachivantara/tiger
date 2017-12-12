@@ -5,13 +5,12 @@ import com.google.gson.GsonBuilder;
 import okhttp3.*;
 import org.pentaho.tiger.lumada.entity.AssetProperty;
 import org.pentaho.tiger.lumada.request.AssetNewRequest;
+import org.pentaho.tiger.lumada.request.AssetTypeNewRequest;
 import org.pentaho.tiger.lumada.request.AssetViewEventDataRequest;
 import org.pentaho.tiger.lumada.request.LoginRequest;
-import org.pentaho.tiger.lumada.response.AssetGetAccessTokenResponse;
-import org.pentaho.tiger.lumada.response.AssetViewEventDataResponse;
-import org.pentaho.tiger.lumada.response.AssetViewResponse;
-import org.pentaho.tiger.lumada.response.LoginResponse;
+import org.pentaho.tiger.lumada.response.*;
 
+import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -25,7 +24,7 @@ Command line arguments
     --host      host of the Lumada server
 
     Example:
-    java -cp .:./lib/* org.pentaho.tiger.lumada.LumadaRestClient --debug --host 10.0.2.15
+    java -cp .:./lib/* org.pentaho.tiger.lumada.LumadaRestClient --debug --host 10.0.2.15 --username YOUR_USERNAME --password YOUR_PASSWORD
 
     Make sure all required jars are in "lib" directory:
         gson-2.8.2.jar
@@ -37,19 +36,26 @@ public class LumadaRestClient {
     private static Gson gson = new GsonBuilder().setPrettyPrinting().create();
     private static LumadaRestHelper helper = new LumadaRestHelper();
 
-    private static String LUMADA_HOST = "localhost";
-    private static String LUMADA_USER = "admin";
-    private static String LUMADA_PASS = "admin";
+    private static String LUMADA_HOST = null;
+    private static String LUMADA_USER = null;
+    private static String LUMADA_PASS = null;
 
     private static String LOGIN_ENDPOINT = "https://%s/v1/security/oauth/token";
     private static String ASSET_VIEW_ENDPOINT = "https://%s/v1/asset-management/assets/%s";
     private static String ASSET_VIEW_EVENT_DATA_ENDPOINT = "https://%s/v1/asset-data/assets/%s/events?startTime=%s&endTime=%s";
     private static String ASSET_GET_ACCESS_TOKEN_ENDPOINT = "https://%s/v1/asset-management/assets/%s/token";
     private static String ASSET_ADD_NEW_AVATAR_ENDPOINT = "https://%s/v1/asset-management/assets";
+    private static String ASSET_ADD_NEW_AVATAR_TYPE_ENDPOINT = "https://%s/v1/asset-management/asset-types";
+    private static String FILE_UPLOAD_ENDPOINT = "https://%s/v1/file-management/files/";
 
     private static SimpleDateFormat EVENT_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
     public static LoginResponse login(LoginRequest loginRequest) {
+        String url = String.format(LOGIN_ENDPOINT, LUMADA_HOST);
+        if (DEBUG) {
+            System.out.println(url);
+        }
+
         OkHttpClient client = helper.createHttpClient();
 
         RequestBody requestBody = new MultipartBody.Builder()
@@ -60,9 +66,6 @@ public class LumadaRestClient {
                 .addFormDataPart("scope", loginRequest.getScope())
                 .addFormDataPart("client_id", loginRequest.getClientId())
                 .build();
-
-        String url = String.format(LOGIN_ENDPOINT, LUMADA_HOST);
-
 
         Request request = new Request.Builder()
                 .url(url)
@@ -95,6 +98,51 @@ public class LumadaRestClient {
 
         return null;
     }
+
+    public static String uploadFile(String token, File file) {
+        String url = String.format(FILE_UPLOAD_ENDPOINT, LUMADA_HOST);
+        if (DEBUG) {
+            System.out.println(url);
+        }
+
+        OkHttpClient client = helper.createHttpClient();
+
+        RequestBody formBody = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("file", file.getName(), RequestBody.create(MediaType.parse(file.getName()), file))
+                .build();
+
+        Request request = new Request.Builder()
+                .url(url)
+                .addHeader("Authorization", "Bearer " + token)
+                .post(formBody).build();
+
+        String body;
+        Response response;
+        try {
+            response = client.newCall(request).execute();
+            body = response.body().string();
+
+            if (DEBUG) {
+                System.out.println(body);
+            }
+
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            UploadFileResponse uploadResponse = gson.fromJson(body, UploadFileResponse.class);
+
+            if (DEBUG) {
+                System.out.println(gson.toJson(uploadResponse));
+            }
+
+            return uploadResponse.getId();
+        } catch (IOException ioe) {
+            System.err.println(ioe);
+        } finally {
+        }
+
+        return null;
+    }
+
 
     public static void viewAsset(String token, String assetId) {
         String url = String.format(ASSET_VIEW_ENDPOINT, LUMADA_HOST, assetId);
@@ -147,6 +195,21 @@ public class LumadaRestClient {
         return null;
     }
 
+    public static String addAssetType(String token, AssetTypeNewRequest assetTypeNewRequest) {
+        String url = String.format(ASSET_ADD_NEW_AVATAR_TYPE_ENDPOINT, LUMADA_HOST);
+        if (DEBUG) {
+            System.out.println(url);
+        }
+
+        AssetTypeViewResponse response = (AssetTypeViewResponse) helper.execute(token, url, AssetTypeViewResponse.class, new Gson().toJson(assetTypeNewRequest), "POST");
+        System.out.println(response);
+        if (response != null) {
+            return response.getId();
+        }
+
+        return null;
+    }
+
     public static void main(String[] args) throws Exception {
         try {
             if (args.length != 0) {
@@ -156,6 +219,10 @@ public class LumadaRestClient {
                         LumadaRestHelper.DEBUG = true;
                     } else if ("--host".endsWith(args[i])) {
                         LUMADA_HOST = args[++i];
+                    } else if ("--username".endsWith(args[i])) {
+                        LUMADA_USER = args[++i];
+                    } else if ("--password".endsWith(args[i])) {
+                        LUMADA_PASS = args[++i];
                     }
                 }
             }
@@ -164,15 +231,18 @@ public class LumadaRestClient {
             System.err.println(ex);
         }
 
-        String username = "admin";
-        String password = "YOUR_PASSWORD";//YOUR_PASSWORD
+        if (LUMADA_HOST == null || LUMADA_USER == null || LUMADA_PASS == null) {
+            System.out.println("Need Lumada hostname/ip, username and password");
+            System.out.println("EX: java -cp .:./lib/* org.pentaho.tiger.lumada.LumadaRestClient --host 10.0.2.15 --username YOUR_USERNAME --password YOUR_PASSWORD");
+            return;
+        }
 
         System.out.println("Connecting to Lumada");
 
         //Login and obtain token
         LoginRequest loginRequest = new LoginRequest();
-        loginRequest.setUsername(username);
-        loginRequest.setPassword(password);
+        loginRequest.setUsername(LUMADA_USER);
+        loginRequest.setPassword(LUMADA_PASS);
         LoginResponse loginResponse = login(loginRequest);
 
         if (loginResponse == null) {
@@ -190,10 +260,39 @@ public class LumadaRestClient {
             return;
         }
 
+        long namePrefix = new Date().getTime();
+
+        //upload image file
+        System.out.println("----------------------------------------");
+        String pictureId = uploadFile(token, new File("/home/pentaho/Downloads/toyota1.png"));
+        System.out.println("new picture id: " + pictureId);
+
+
+        //Create new asset avatar type
+        System.out.println("----------------------------------------");
+        AssetTypeNewRequest assetTypeNewRequest = new AssetTypeNewRequest();
+        assetTypeNewRequest.setName("ToyotaForkliftTruck" + namePrefix);
+        assetTypeNewRequest.setPictureId(pictureId);
+        String newTypeId = addAssetType(token, assetTypeNewRequest);
+        System.out.println("New Type Id: " + newTypeId);
+
+        //Create new asset avatar
+        System.out.println("----------------------------------------");
+        AssetNewRequest assetNewRequest = new AssetNewRequest();
+        assetNewRequest.setName("Doosan B13R-5-" + namePrefix);
+        assetNewRequest.setAssetTypeId(newTypeId);
+        //Create properties for this new asset avatar
+        List<AssetProperty> properties = new ArrayList<AssetProperty>();
+        properties.add(new AssetProperty("location", "Seattle"));
+        properties.add(new AssetProperty("Speed", "5"));
+        assetNewRequest.setPriperties(properties);
+        String newId = addAsset(token, assetNewRequest);
+        System.out.println("New Id: " + newId);
+
         //View an asset
         System.out.println("----------------------------------------");
-        String assetId = "9d23824d-5ac1-48e9-8b97-cad607938a8f";
-        LumadaRestClient.viewAsset(token, assetId);
+        String assetId = newId;
+        viewAsset(token, assetId);
 
         //List asset's event
         System.out.println("----------------------------------------");
@@ -211,17 +310,6 @@ public class LumadaRestClient {
         String assetAccessToken = getAssetAccessToken(token, assetId);
         System.out.println("Asset access token: " + assetAccessToken);
 
-        //Create new asset avatar
-        System.out.println("----------------------------------------");
-        AssetNewRequest assetNewRequest = new AssetNewRequest();
-        assetNewRequest.setName("Doosan B13R-5B");
-        assetNewRequest.setAssetTypeId("662bf4d4-d14c-11e7-8bb5-080027e18512");
-        //Create properties for this new asset avatar
-        List<AssetProperty> properties = new ArrayList<AssetProperty>();
-        properties.add(new AssetProperty("location","Seattle"));
-        properties.add(new AssetProperty("Speed","5"));
-        assetNewRequest.setPriperties(properties);
-        String newId = addAsset(token, assetNewRequest);
-        System.out.println("New Id: " + newId);
+
     }
 }
