@@ -12,8 +12,6 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
 public class LumadaRestHelper {
-    public static boolean DEBUG = false;
-
     private static LumadaTrustManager trustManager = new LumadaTrustManager();
     private static Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
@@ -67,7 +65,7 @@ public class LumadaRestHelper {
         try {
             response = client.newCall(request).execute();
             body = response.body().string();
-            if (DEBUG) {
+            if (LumadaRestClient.DEBUG) {
                 System.out.println(body);
             }
 
