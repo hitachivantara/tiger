@@ -6,6 +6,7 @@ public class LoginRequest {
     private String grantType = "password";
     private String scope = "all";
     private String clientId = "lumada-ui";
+    private String realm = "local";
 
     public String getUsername() {
         return username;
@@ -45,5 +46,13 @@ public class LoginRequest {
 
     public void setClientId(String clientId) {
         this.clientId = clientId;
+    }
+
+    public String getRealm() {
+        return realm;
+    }
+
+    public void setRealm(String realm) {
+        this.realm = realm;
     }
 }

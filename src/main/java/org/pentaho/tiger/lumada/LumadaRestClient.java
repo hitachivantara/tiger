@@ -50,6 +50,7 @@ public class LumadaRestClient {
                 .addFormDataPart("password", loginRequest.getPassword())
                 .addFormDataPart("scope", loginRequest.getScope())
                 .addFormDataPart("client_id", loginRequest.getClientId())
+                .addFormDataPart("realm", loginRequest.getRealm())
                 .build();
 
         Request request = new Request.Builder()
