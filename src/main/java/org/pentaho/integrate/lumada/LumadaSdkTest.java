@@ -27,7 +27,8 @@ public class LumadaSdkTest {
                 entityId);
         AssetClient client = new AssetClientImpl(config);
 
-        final JsonObject payload = new JsonObject();                                                    //Creating payload object
+        //Creating payload object
+        final JsonObject payload = new JsonObject();
         payload.addProperty("temp", 45);
         payload.addProperty("weight", 33);
         payload.addProperty("speed", "2");
