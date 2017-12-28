@@ -44,6 +44,17 @@ func main() {
 		fmt.Println(err)
 	}
 
-	fmt.Printf("Access token: %v\n", loginResp.AccessToken)
+	token := loginResp.AccessToken
+	fmt.Printf("Access token: %v\n", token)
 
+}
+
+func addDataSink(host string, token string) (string, *error) {
+	req := lumada.CreateDataSinkRequest{Name: "NissanForkliftDataSink", Schema: "", Qos: "QOS_0", ValidationType: "NONE"}
+	resp, err := lumada.CreateDataSink(req, host, token)
+
+	if err != nil {
+		return "", &err
+	}
+	return resp.Id, nil
 }
